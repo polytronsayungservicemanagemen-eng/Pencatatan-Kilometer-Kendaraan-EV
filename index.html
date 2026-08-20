@@ -421,6 +421,47 @@
     font-weight:700;
     color:var(--muted);
   }
+
+  /* Toggle pilihan Dalam Kota / Luar Kota */
+  .toggle-group{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .toggle-option{
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:12px 10px;
+    text-align:center;
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+    transition:all .15s ease;
+    user-select:none;
+  }
+  .toggle-option:active{transform:scale(0.97);}
+  .toggle-option.selected{
+    border-color:var(--green);
+    background:var(--green-bg);
+    color:var(--green-dark);
+  }
+  textarea.ket-textarea{
+    width:100%;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:11px 13px;
+    font-size:14.5px;
+    font-family:inherit;
+    color:var(--ink);
+    resize:vertical;
+    min-height:70px;
+  }
+  textarea.ket-textarea:focus{
+    outline:none;
+    border-color:var(--green);
+    box-shadow:0 0 0 3px var(--green-bg);
+  }
 </style>
 </head>
 <body>
@@ -528,6 +569,36 @@
           <div>
             <label for="nikManual">NIK (opsional)</label>
             <input type="text" id="nikManual" placeholder="NIK">
+          </div>
+        </div>
+
+        <div class="sub-section" id="detailTugasSection">
+          <div class="sub-section-title">Detail Tugas</div>
+          <div class="field">
+            <label>Wilayah Tugas</label>
+            <div class="toggle-group" id="wilayahTugasGroup">
+              <div class="toggle-option" data-value="Dalam Kota">Dalam Kota</div>
+              <div class="toggle-option" data-value="Luar Kota">Luar Kota</div>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="keteranganTugas">Keterangan</label>
+            <textarea class="ket-textarea" id="keteranganTugas" placeholder="Contoh: Kunjungan ke kantor cabang / mengantar barang ke..."></textarea>
+          </div>
+        </div>
+
+        <div class="sub-section" id="detailChargingSection" style="display:none;">
+          <div class="sub-section-title">Detail Charging</div>
+          <div class="field" id="lokasiChargingField">
+            <label>Lokasi Charging</label>
+            <div class="toggle-group" id="lokasiChargingGroup">
+              <div class="toggle-option" data-value="Dalam Perusahaan">Dalam Perusahaan</div>
+              <div class="toggle-option" data-value="Luar Perusahaan">Luar Perusahaan</div>
+            </div>
+          </div>
+          <div class="field" id="lokasiSpkluField" style="display:none;margin-bottom:0;">
+            <label for="lokasiSpklu">Lokasi SPKLU</label>
+            <input type="text" id="lokasiSpklu" placeholder="Contoh: SPKLU PLN Rest Area KM 57">
           </div>
         </div>
 
@@ -653,6 +724,7 @@
     keterangan: '',
     keteranganLabel: '',
     nomorKendaraan: '',
+    wilayahTugas: '',
     selectedTrip: null      // dipakai di flow 'selesai': {idTrip, nomorKendaraan, namaDriver, nik, tanggalAwal, jamAwal, kmAwal, keterangan}
   };
 
@@ -733,6 +805,7 @@
     state.keterangan = '';
     state.keteranganLabel = '';
     state.nomorKendaraan = '';
+    state.wilayahTugas = '';
     state.selectedTrip = null;
     history = ['pageAksi'];
   }
@@ -751,12 +824,29 @@
   });
 
   // ---- [MULAI] HALAMAN Jenis Pencatatan ----
+  const detailTugasSection = document.getElementById('detailTugasSection');
+  const wilayahTugasGroup = document.getElementById('wilayahTugasGroup');
+  const keteranganTugasInput = document.getElementById('keteranganTugas');
+
   document.querySelectorAll('#pageJenis .jenis-option').forEach(function (opt) {
     opt.addEventListener('click', function () {
       state.keterangan = opt.dataset.value;
       state.keteranganLabel = opt.querySelector('.title').textContent;
+      // Detail Tugas (Dalam/Luar Kota + keterangan) hanya relevan untuk KM Perjalanan
+      const isPerjalanan = opt.id === 'optPerjalanan';
+      detailTugasSection.style.display = isPerjalanan ? 'block' : 'none';
       hideMsg();
       goToPage('pageKendaraan');
+    });
+  });
+
+  wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (o) {
+        o.classList.remove('selected');
+      });
+      opt.classList.add('selected');
+      state.wilayahTugas = opt.dataset.value;
     });
   });
 
@@ -950,6 +1040,22 @@
       nikFinal = selectedDriver.nik;
     }
 
+    const isPerjalanan = state.keterangan === 'Kilometer Perjalanan';
+    if (isPerjalanan && !state.wilayahTugas) {
+      showMsg('Mohon pilih Wilayah Tugas (Dalam Kota / Luar Kota).', 'error');
+      return;
+    }
+
+    // Gabungkan jenis pencatatan dengan wilayah tugas & keterangan tugas (jika ada)
+    let keteranganFinal = state.keterangan;
+    if (isPerjalanan) {
+      keteranganFinal = state.keterangan + ' - ' + state.wilayahTugas;
+      const catatanTugas = keteranganTugasInput.value.trim();
+      if (catatanTugas) {
+        keteranganFinal += ' | ' + catatanTugas;
+      }
+    }
+
     const payload = {
       action: 'mulai',
       nomorKendaraan: state.nomorKendaraan,
@@ -957,7 +1063,7 @@
       nik: nikFinal,
       tanggalAwal: document.getElementById('tanggalAwal').value,
       jamAwal: getTimeSelectValue(jamAwalSel.hhEl, jamAwalSel.mmEl),
-      keterangan: state.keterangan,
+      keterangan: keteranganFinal,
       kmAwal: kmAwal
     };
 
@@ -1086,6 +1192,9 @@
     selisihPreview.innerHTML = '';
     manualDriverFields.style.display = 'none';
     namaDriverManualInput.required = false;
+    wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (o) {
+      o.classList.remove('selected');
+    });
     hideMsg();
     resetAllState();
     loadMasterData(); // refresh daftar trip aktif & kendaraan
