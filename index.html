@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pencatatan KM Kendaraan EV</title>
+<style>
+  :root{
+    --ink:#0E1F1A;
+    --paper:#F5F7F4;
+    --card:#FFFFFF;
+    --line:#DCE3DD;
+    --green:#0F8A5F;
+    --green-dark:#0B6B49;
+    --amber:#C9791A;
+    --amber-bg:#FBF0E1;
+    --green-bg:#E8F5EE;
+    --muted:#5B6B63;
+    --danger:#C0392B;
+    --danger-bg:#FBEAE8;
+    --radius:14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  header{
+    background:var(--ink);
+    color:#fff;
+    padding:18px 20px 20px;
+    position:relative;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  header .bolt{
+    position:absolute;
+    right:-10px;
+    top:-10px;
+    width:110px;
+    height:110px;
+    opacity:.12;
+  }
+  header .top-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:4px;
+  }
+  header .back-btn{
+    background:rgba(255,255,255,0.12);
+    border:none;
+    color:#fff;
+    width:32px;
+    height:32px;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    visibility:hidden;
+  }
+  header .back-btn.show{visibility:visible;}
+  header .eyebrow{
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:#9FCBB6;
+    font-weight:600;
+  }
+  header h1{
+    margin:2px 0 0;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .progress{
+    display:flex;
+    gap:6px;
+    margin-top:16px;
+  }
+  .progress .dot{
+    flex:1;
+    height:4px;
+    border-radius:2px;
+    background:rgba(255,255,255,0.18);
+  }
+  .progress .dot.done{background:var(--green);}
+  .progress .dot.current{background:#fff;}
+
+  main{
+    flex:1;
+    max-width:520px;
+    width:100%;
+    margin:0 auto;
+    padding:22px 18px 24px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .page{display:none;flex:1;flex-direction:column;}
+  .page.active{display:flex;}
+
+  .page-title{
+    font-size:18px;
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .page-sub{
+    font-size:14px;
+    color:var(--muted);
+    margin:0 0 22px;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(14,31,26,0.04);
+  }
+  .sub-section{
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .sub-section:last-of-type{margin-bottom:0;}
+  .sub-section-title{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--green-dark);
+    margin-bottom:14px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  select, input[type="text"], input[type="date"], input[type="time"], input[type="number"]{
+    width:100%;
+    padding:12px 14px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    font-size:16px;
+    background:#fff;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  select:focus, input:focus{
+    outline:none;
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(15,138,95,0.15);
+  }
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+
+  /* Step 1: pilihan jenis pencatatan, tombol besar penuh */
+  .jenis-group{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    flex:1;
+  }
+  .jenis-option{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:16px;
+    padding:26px 20px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .jenis-option:active{transform:scale(0.98);}
+  .jenis-option .icon{
+    font-size:30px;
+    width:56px;
+    height:56px;
+    border-radius:14px;
+    background:var(--green-bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .jenis-option.charging .icon{background:var(--amber-bg);}
+  .jenis-option .text-wrap{flex:1;}
+  .jenis-option .title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+  .jenis-option .desc{font-size:13px;color:var(--muted);}
+  .jenis-option .chev{font-size:20px;color:var(--line);}
+  .jenis-option:hover{border-color:var(--green);}
+  .jenis-option.charging:hover{border-color:var(--amber);}
+
+  /* Step 2: daftar kendaraan sebagai list besar */
+  .kendaraan-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .kendaraan-item{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    cursor:pointer;
+    font-weight:700;
+    font-size:15px;
+    transition:all .15s ease;
+  }
+  .kendaraan-item:hover{border-color:var(--green);}
+  .kendaraan-item:active{transform:scale(0.98);}
+  .kendaraan-item .chev{color:var(--line);font-weight:400;}
+  .list-status{
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    padding:20px 0;
+  }
+
+  .selisih-preview{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:8px;
+    min-height:18px;
+  }
+  .selisih-preview strong{color:var(--ink);}
+
+  .selected-summary{
+    background:var(--green-bg);
+    border:1px solid #BFE3D0;
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:13px;
+    color:var(--green-dark);
+    font-weight:600;
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .selected-summary .edit-link{
+    font-size:12px;
+    color:var(--green-dark);
+    text-decoration:underline;
+    cursor:pointer;
+    font-weight:700;
+  }
+
+  button.primary{
+    width:100%;
+    padding:16px;
+    background:var(--green);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s ease;
+    margin-top:auto;
+  }
+  button.primary:hover{background:var(--green-dark);}
+  button.primary:disabled{background:#A9B8B0;cursor:not-allowed;}
+
+  .msg{
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:14px;
+    margin-bottom:16px;
+    display:none;
+    font-weight:600;
+  }
+  .msg.success{display:block;background:var(--green-bg);color:var(--green-dark);border:1px solid #BFE3D0;}
+  .msg.error{display:block;background:var(--danger-bg);color:var(--danger);border:1px solid #F3C7C2;}
+
+  /* Halaman sukses */
+  .success-page{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:14px;
+  }
+  .success-page .check{
+    width:72px;
+    height:72px;
+    border-radius:50%;
+    background:var(--green-bg);
+    color:var(--green-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:34px;
+  }
+  .success-page h2{margin:0;font-size:19px;}
+  .success-page p{margin:0;color:var(--muted);font-size:14px;max-width:280px;}
+
+  .footnote{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-row">
+    <button type="button" class="back-btn" id="backBtn">←</button>
+    <div>
+      <div class="eyebrow">Fleet EV · Vehicle Log</div>
+      <h1 id="headerTitle">Pencatatan KM Kendaraan EV</h1>
+    </div>
+  </div>
+  <svg class="bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4 14h6l-1 8 9-12h-6z"/></svg>
+  <div class="progress">
+    <div class="dot current" data-step="1"></div>
+    <div class="dot" data-step="2"></div>
+    <div class="dot" data-step="3"></div>
+  </div>
+</header>
+
+<main>
+  <div id="msgBox" class="msg"></div>
+
+  <!-- ===================== HALAMAN 1: Jenis Pencatatan ===================== -->
+  <section class="page active" id="page1">
+    <p class="page-title">Pilih Jenis Pencatatan</p>
+    <p class="page-sub">Tentukan dulu jenis catatan KM yang akan diinput.</p>
+    <div class="jenis-group">
+      <div class="jenis-option" id="optPerjalanan" data-value="Kilometer Perjalanan">
+        <div class="icon">🛣️</div>
+        <div class="text-wrap">
+          <div class="title">KM Perjalanan</div>
+          <div class="desc">Catat KM awal & akhir untuk perjalanan operasional</div>
+        </div>
+        <div class="chev">›</div>
+      </div>
+      <div class="jenis-option charging" id="optCharging" data-value="Kilometer Pengisian Charging">
+        <div class="icon">⚡</div>
+        <div class="text-wrap">
+          <div class="title">KM Charging</div>
+          <div class="desc">Catat KM awal & akhir saat pengisian daya (charging)</div>
+        </div>
+        <div class="chev">›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HALAMAN 2: Nomor Kendaraan ===================== -->
+  <section class="page" id="page2">
+    <p class="page-title">Pilih Nomor Kendaraan</p>
+    <p class="page-sub">Pilih kendaraan yang digunakan.</p>
+    <div class="kendaraan-list" id="kendaraanList">
+      <div class="list-status">Memuat daftar kendaraan…</div>
+    </div>
+  </section>
+
+  <!-- ===================== HALAMAN 3: Detail Pencatatan ===================== -->
+  <section class="page" id="page3">
+    <p class="page-title">Detail Pencatatan</p>
+    <p class="page-sub">Lengkapi data di bawah ini.</p>
+
+    <div class="selected-summary">
+      <span id="summaryText"></span>
+      <span class="edit-link" id="editLink">Ubah</span>
+    </div>
+
+    <form id="kmForm">
+      <div class="card">
+        <div class="field">
+          <label for="namaDriver">Nama Driver</label>
+          <select id="namaDriver" required>
+            <option value="" disabled selected>Memuat daftar driver…</option>
+          </select>
+        </div>
+
+        <div class="field row2" id="manualDriverFields" style="display:none;">
+          <div>
+            <label for="namaDriverManual">Nama (isi manual)</label>
+            <input type="text" id="namaDriverManual" placeholder="Nama lengkap">
+          </div>
+          <div>
+            <label for="nikManual">NIK (opsional)</label>
+            <input type="text" id="nikManual" placeholder="NIK">
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-section-title">KM Awal</div>
+          <div class="field row2">
+            <div>
+              <label for="tanggalAwal">Tanggal</label>
+              <input type="date" id="tanggalAwal" required>
+            </div>
+            <div>
+              <label for="jamAwal">Jam</label>
+              <input type="time" id="jamAwal" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="kmAwal">KM Awal</label>
+            <input type="number" id="kmAwal" inputmode="numeric" min="0" placeholder="0" required>
+          </div>
+        </div>
+
+        <div class="sub-section">
+          <div class="sub-section-title">KM Akhir</div>
+          <div class="field row2">
+            <div>
+              <label for="tanggalAkhir">Tanggal</label>
+              <input type="date" id="tanggalAkhir" required>
+            </div>
+            <div>
+              <label for="jamAkhir">Jam</label>
+              <input type="time" id="jamAkhir" required>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="kmAkhir">KM Akhir</label>
+            <input type="number" id="kmAkhir" inputmode="numeric" min="0" placeholder="0" required>
+          </div>
+        </div>
+        <div class="selisih-preview" id="selisihPreview"></div>
+      </div>
+
+      <button type="submit" class="primary" id="submitBtn">Simpan Data</button>
+    </form>
+  </section>
+
+  <!-- ===================== HALAMAN 4: Sukses ===================== -->
+  <section class="page" id="page4">
+    <div class="success-page">
+      <div class="check">✓</div>
+      <h2>Data Tersimpan</h2>
+      <p id="successDetail">Data berhasil dicatat ke spreadsheet.</p>
+      <button type="button" class="primary" id="newEntryBtn" style="margin-top:10px;max-width:260px;">Catat Data Baru</button>
+    </div>
+  </section>
+
+  <p class="footnote">Data otomatis tersimpan ke spreadsheet sesuai nomor kendaraan yang dipilih.</p>
+</main>
+
+<script>
+  // ==========================================================
+  // GANTI URL DI BAWAH INI dengan URL Web App Apps Script Anda
+  // (lihat PANDUAN_SETUP.md langkah "Deploy")
+  // ==========================================================
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwexuoZ324qUPosAEJzuxNoiS8bw5DKwcyAchoPR5saf4hh1J3I5cc2RpTsJ_3NTKdS7A/exec';
+
+  // ---- State ----
+  const state = {
+    keterangan: '',
+    keteranganLabel: '',
+    nomorKendaraan: ''
+  };
+
+  // ---- Elemen umum ----
+  const pages = {
+    1: document.getElementById('page1'),
+    2: document.getElementById('page2'),
+    3: document.getElementById('page3'),
+    4: document.getElementById('page4')
+  };
+  const dots = document.querySelectorAll('.progress .dot');
+  const backBtn = document.getElementById('backBtn');
+  const headerTitle = document.getElementById('headerTitle');
+  const msgBox = document.getElementById('msgBox');
+
+  const titles = {
+    1: 'Pencatatan KM Kendaraan EV',
+    2: 'Pilih Kendaraan',
+    3: 'Detail Pencatatan',
+    4: 'Selesai'
+  };
+
+  let currentPage = 1;
+  let history = [1];
+
+  function goToPage(n, pushHistory){
+    Object.values(pages).forEach(p => p.classList.remove('active'));
+    pages[n].classList.add('active');
+    currentPage = n;
+    headerTitle.textContent = titles[n];
+    backBtn.classList.toggle('show', n > 1 && n < 4);
+
+    dots.forEach(function(dot){
+      const step = parseInt(dot.dataset.step, 10);
+      dot.classList.remove('current','done');
+      if(step < n && n < 4) dot.classList.add('done');
+      else if(step === n && n < 4) dot.classList.add('current');
+      else if(n === 4) dot.classList.add('done');
+    });
+
+    if(pushHistory !== false){
+      history.push(n);
+    }
+    window.scrollTo({top:0});
+  }
+
+  backBtn.addEventListener('click', function(){
+    history.pop(); // buang halaman saat ini
+    const prev = history[history.length - 1] || 1;
+    goToPage(prev, false);
+  });
+
+  function showMsg(text, type){
+    msgBox.textContent = text;
+    msgBox.className = 'msg ' + type;
+  }
+  function hideMsg(){
+    msgBox.className = 'msg';
+  }
+
+  // ---- HALAMAN 1: pilih jenis pencatatan ----
+  document.querySelectorAll('.jenis-option').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      state.keterangan = opt.dataset.value;
+      state.keteranganLabel = opt.querySelector('.title').textContent;
+      hideMsg();
+      goToPage(2);
+    });
+  });
+
+  // ---- HALAMAN 2: pilih nomor kendaraan  +  daftar driver (Master_Driver) ----
+  const kendaraanList = document.getElementById('kendaraanList');
+  const namaDriverSelect = document.getElementById('namaDriver');
+  let daftarDriver = []; // {nama, nik}
+
+  async function loadMasterData(){
+    try{
+      const res = await fetch(API_URL);
+      const data = await res.json();
+
+      // --- Nomor Kendaraan ---
+      kendaraanList.innerHTML = '';
+      if(data.status === 'success' && data.kendaraan && data.kendaraan.length > 0){
+        data.kendaraan.forEach(function(nopol){
+          const item = document.createElement('div');
+          item.className = 'kendaraan-item';
+          item.innerHTML = '<span>' + nopol + '</span><span class="chev">›</span>';
+          item.addEventListener('click', function(){
+            state.nomorKendaraan = nopol;
+            updateSummary();
+            hideMsg();
+            goToPage(3);
+          });
+          kendaraanList.appendChild(item);
+        });
+      } else {
+        kendaraanList.innerHTML = '<div class="list-status">Daftar kendaraan kosong. Hubungi admin untuk menambahkan di sheet "Master".</div>';
+      }
+
+      // --- Daftar Driver ---
+      namaDriverSelect.innerHTML = '';
+      if(data.status === 'success' && data.driver && data.driver.length > 0){
+        daftarDriver = data.driver;
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = 'Pilih nama driver';
+        namaDriverSelect.appendChild(placeholder);
+        daftarDriver.forEach(function(drv, idx){
+          const opt = document.createElement('option');
+          opt.value = idx;
+          opt.textContent = drv.nik ? (drv.nama + ' — ' + drv.nik) : drv.nama;
+          namaDriverSelect.appendChild(opt);
+        });
+      } else {
+        daftarDriver = [];
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = 'Pilih nama driver';
+        namaDriverSelect.appendChild(placeholder);
+      }
+      // Opsi isi manual, selalu tersedia di paling bawah
+      const manualOpt = document.createElement('option');
+      manualOpt.value = 'MANUAL';
+      manualOpt.textContent = '✏️ Lainnya (isi manual)';
+      namaDriverSelect.appendChild(manualOpt);
+    } catch(err){
+      kendaraanList.innerHTML = '<div class="list-status">Gagal memuat daftar kendaraan.</div>';
+      namaDriverSelect.innerHTML = '<option value="" disabled selected>Gagal memuat daftar driver</option><option value="MANUAL">✏️ Lainnya (isi manual)</option>';
+      showMsg('Gagal memuat data master. Periksa koneksi atau URL API.', 'error');
+    }
+  }
+  loadMasterData();
+
+  // ---- HALAMAN 3: detail pencatatan ----
+  const form = document.getElementById('kmForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const kmAwalInput = document.getElementById('kmAwal');
+  const kmAkhirInput = document.getElementById('kmAkhir');
+  const selisihPreview = document.getElementById('selisihPreview');
+  const summaryText = document.getElementById('summaryText');
+  const editLink = document.getElementById('editLink');
+  const manualDriverFields = document.getElementById('manualDriverFields');
+  const namaDriverManualInput = document.getElementById('namaDriverManual');
+  const nikManualInput = document.getElementById('nikManual');
+
+  namaDriverSelect.addEventListener('change', function(){
+    if(namaDriverSelect.value === 'MANUAL'){
+      manualDriverFields.style.display = 'grid';
+      namaDriverManualInput.required = true;
+    } else {
+      manualDriverFields.style.display = 'none';
+      namaDriverManualInput.required = false;
+      namaDriverManualInput.value = '';
+      nikManualInput.value = '';
+    }
+  });
+
+  function updateSummary(){
+    summaryText.textContent = state.keteranganLabel + ' · ' + state.nomorKendaraan;
+  }
+  editLink.addEventListener('click', function(){
+    history.pop();
+    goToPage(2, false);
+  });
+
+  function setDefaultDateTime(){
+    const now = new Date();
+    const tgl = now.toISOString().slice(0,10);
+    const jm = now.toTimeString().slice(0,5);
+    document.getElementById('tanggalAwal').value = tgl;
+    document.getElementById('jamAwal').value = jm;
+    document.getElementById('tanggalAkhir').value = tgl;
+    document.getElementById('jamAkhir').value = jm;
+  }
+  setDefaultDateTime();
+
+  function updateSelisih(){
+    const awal = parseFloat(kmAwalInput.value);
+    const akhir = parseFloat(kmAkhirInput.value);
+    if(!isNaN(awal) && !isNaN(akhir)){
+      const selisih = akhir - awal;
+      if(selisih < 0){
+        selisihPreview.innerHTML = '<span style="color:#C0392B;">KM Akhir tidak boleh lebih kecil dari KM Awal</span>';
+      } else {
+        selisihPreview.innerHTML = 'Jarak tempuh: <strong>' + selisih + ' km</strong>';
+      }
+    } else {
+      selisihPreview.innerHTML = '';
+    }
+  }
+  kmAwalInput.addEventListener('input', updateSelisih);
+  kmAkhirInput.addEventListener('input', updateSelisih);
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    hideMsg();
+
+    const kmAwal = parseFloat(kmAwalInput.value);
+    const kmAkhir = parseFloat(kmAkhirInput.value);
+    if(kmAkhir < kmAwal){
+      showMsg('KM Akhir tidak boleh lebih kecil dari KM Awal.', 'error');
+      return;
+    }
+
+    let namaDriverFinal, nikFinal;
+    if(namaDriverSelect.value === 'MANUAL'){
+      namaDriverFinal = namaDriverManualInput.value.trim();
+      nikFinal = nikManualInput.value.trim();
+      if(!namaDriverFinal){
+        showMsg('Mohon isi Nama Driver.', 'error');
+        return;
+      }
+    } else {
+      const selectedDriver = daftarDriver[namaDriverSelect.value];
+      if(!selectedDriver){
+        showMsg('Mohon pilih Nama Driver.', 'error');
+        return;
+      }
+      namaDriverFinal = selectedDriver.nama;
+      nikFinal = selectedDriver.nik;
+    }
+
+    const payload = {
+      nomorKendaraan: state.nomorKendaraan,
+      namaDriver: namaDriverFinal,
+      nik: nikFinal,
+      tanggalAwal: document.getElementById('tanggalAwal').value,
+      jamAwal: document.getElementById('jamAwal').value,
+      tanggalAkhir: document.getElementById('tanggalAkhir').value,
+      jamAkhir: document.getElementById('jamAkhir').value,
+      keterangan: state.keterangan,
+      kmAwal: kmAwal,
+      kmAkhir: kmAkhir
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Menyimpan…';
+
+    try{
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if(data.status === 'success'){
+        document.getElementById('successDetail').textContent =
+          state.keteranganLabel + ' untuk kendaraan ' + state.nomorKendaraan + ' berhasil dicatat.';
+        goToPage(4);
+      } else {
+        showMsg(data.message || 'Terjadi kesalahan saat menyimpan data.', 'error');
+      }
+    } catch(err){
+      showMsg('Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Simpan Data';
+    }
+  });
+
+  // ---- HALAMAN 4: sukses -> mulai catatan baru ----
+  document.getElementById('newEntryBtn').addEventListener('click', function(){
+    form.reset();
+    setDefaultDateTime();
+    selisihPreview.innerHTML = '';
+    manualDriverFields.style.display = 'none';
+    namaDriverManualInput.required = false;
+    state.keterangan = '';
+    state.keteranganLabel = '';
+    state.nomorKendaraan = '';
+    hideMsg();
+    history = [1];
+    goToPage(1, false);
+  });
+</script>
+
+</body>
+</html>
