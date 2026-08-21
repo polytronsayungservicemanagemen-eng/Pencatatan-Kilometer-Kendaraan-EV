@@ -592,6 +592,21 @@
           <div class="field" id="lokasiChargingField">
             <label>Lokasi Charging</label>
             <div class="toggle-group" id="lokasiChargingGroup">
+              <div class="toggle-option" data-value="Dalam Lingkungan Perusahaan">Dalam Perusahaan</div>
+              <div class="toggle-option" data-value="Luar Perusahaan">Luar Perusahaan</div>
+            </div>
+          </div>
+          <div class="field" id="spkluField" style="display:none;margin-bottom:0;">
+            <label for="lokasiSpklu">Lokasi SPKLU</label>
+            <input type="text" id="lokasiSpklu" placeholder="Contoh: SPKLU PLN Rest Area KM 57">
+          </div>
+        </div>
+
+        <div class="sub-section" id="detailChargingSection" style="display:none;">
+          <div class="sub-section-title">Detail Charging</div>
+          <div class="field" id="lokasiChargingField">
+            <label>Lokasi Charging</label>
+            <div class="toggle-group" id="lokasiChargingGroup">
               <div class="toggle-option" data-value="Dalam Perusahaan">Dalam Perusahaan</div>
               <div class="toggle-option" data-value="Luar Perusahaan">Luar Perusahaan</div>
             </div>
@@ -725,6 +740,7 @@
     keteranganLabel: '',
     nomorKendaraan: '',
     wilayahTugas: '',
+    lokasiCharging: '',
     selectedTrip: null      // dipakai di flow 'selesai': {idTrip, nomorKendaraan, namaDriver, nik, tanggalAwal, jamAwal, kmAwal, keterangan}
   };
 
@@ -806,6 +822,7 @@
     state.keteranganLabel = '';
     state.nomorKendaraan = '';
     state.wilayahTugas = '';
+    state.lokasiCharging = '';
     state.selectedTrip = null;
     history = ['pageAksi'];
   }
@@ -827,14 +844,19 @@
   const detailTugasSection = document.getElementById('detailTugasSection');
   const wilayahTugasGroup = document.getElementById('wilayahTugasGroup');
   const keteranganTugasInput = document.getElementById('keteranganTugas');
+  const detailChargingSection = document.getElementById('detailChargingSection');
+  const lokasiChargingGroup = document.getElementById('lokasiChargingGroup');
+  const spkluField = document.getElementById('spkluField');
+  const lokasiSpkluInput = document.getElementById('lokasiSpklu');
 
   document.querySelectorAll('#pageJenis .jenis-option').forEach(function (opt) {
     opt.addEventListener('click', function () {
       state.keterangan = opt.dataset.value;
       state.keteranganLabel = opt.querySelector('.title').textContent;
-      // Detail Tugas (Dalam/Luar Kota + keterangan) hanya relevan untuk KM Perjalanan
+      // Detail Tugas hanya untuk KM Perjalanan, Detail Charging hanya untuk KM Charging
       const isPerjalanan = opt.id === 'optPerjalanan';
       detailTugasSection.style.display = isPerjalanan ? 'block' : 'none';
+      detailChargingSection.style.display = isPerjalanan ? 'none' : 'block';
       hideMsg();
       goToPage('pageKendaraan');
     });
@@ -847,6 +869,19 @@
       });
       opt.classList.add('selected');
       state.wilayahTugas = opt.dataset.value;
+    });
+  });
+
+  lokasiChargingGroup.querySelectorAll('.toggle-option').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      lokasiChargingGroup.querySelectorAll('.toggle-option').forEach(function (o) {
+        o.classList.remove('selected');
+      });
+      opt.classList.add('selected');
+      state.lokasiCharging = opt.dataset.value;
+      const isLuar = state.lokasiCharging === 'Luar Perusahaan';
+      spkluField.style.display = isLuar ? 'block' : 'none';
+      if (!isLuar) lokasiSpkluInput.value = '';
     });
   });
 
@@ -1041,18 +1076,32 @@
     }
 
     const isPerjalanan = state.keterangan === 'Kilometer Perjalanan';
+    const isCharging = state.keterangan === 'Kilometer Pengisian Charging';
     if (isPerjalanan && !state.wilayahTugas) {
       showMsg('Mohon pilih Wilayah Tugas (Dalam Kota / Luar Kota).', 'error');
       return;
     }
+    if (isCharging && !state.lokasiCharging) {
+      showMsg('Mohon pilih Lokasi Charging (Dalam Perusahaan / Luar Perusahaan).', 'error');
+      return;
+    }
+    if (isCharging && state.lokasiCharging === 'Luar Perusahaan' && !lokasiSpkluInput.value.trim()) {
+      showMsg('Mohon isi Lokasi SPKLU.', 'error');
+      return;
+    }
 
-    // Gabungkan jenis pencatatan dengan wilayah tugas & keterangan tugas (jika ada)
+    // Gabungkan jenis pencatatan dengan detail tambahan (wilayah tugas / lokasi charging)
     let keteranganFinal = state.keterangan;
     if (isPerjalanan) {
       keteranganFinal = state.keterangan + ' - ' + state.wilayahTugas;
       const catatanTugas = keteranganTugasInput.value.trim();
       if (catatanTugas) {
         keteranganFinal += ' | ' + catatanTugas;
+      }
+    } else if (isCharging) {
+      keteranganFinal = state.keterangan + ' - ' + state.lokasiCharging;
+      if (state.lokasiCharging === 'Luar Perusahaan') {
+        keteranganFinal += ' | SPKLU: ' + lokasiSpkluInput.value.trim();
       }
     }
 
@@ -1195,6 +1244,11 @@
     wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (o) {
       o.classList.remove('selected');
     });
+    lokasiChargingGroup.querySelectorAll('.toggle-option').forEach(function (o) {
+      o.classList.remove('selected');
+    });
+    spkluField.style.display = 'none';
+    lokasiSpkluInput.value = '';
     hideMsg();
     resetAllState();
     loadMasterData(); // refresh daftar trip aktif & kendaraan
