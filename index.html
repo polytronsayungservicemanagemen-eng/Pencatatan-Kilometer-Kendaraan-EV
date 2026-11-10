@@ -463,6 +463,20 @@
     border-color:var(--green);
     box-shadow:0 0 0 3px var(--green-bg);
   }
+
+  /* ---- v3: baterai, biaya SPKLU, foto struk ---- */
+  .hint{font-size:12px;color:var(--muted);font-weight:400;}
+  .foto-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .foto-btn{padding:12px 8px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit;}
+  .foto-btn:disabled{opacity:.45;cursor:not-allowed;}
+  .foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+  .foto-item{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
+  .foto-item img{width:100%;height:100%;object-fit:cover;display:block;}
+  .foto-item .del{position:absolute;top:4px;right:4px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;font-size:15px;line-height:1;cursor:pointer;}
+  .foto-pesan{font-size:12px;margin-top:8px;min-height:16px;color:var(--muted);}
+  .foto-pesan.error{color:#B3141C;font-weight:600;}
+  .bat-preview{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px;}
+  .bat-preview strong{color:var(--ink);}
 </style>
 </head>
 <body>
@@ -603,18 +617,41 @@
           </div>
         </div>
 
-        <div class="sub-section" id="detailChargingSection" style="display:none;">
-          <div class="sub-section-title">Detail Charging</div>
-          <div class="field" id="lokasiChargingField">
-            <label>Lokasi Charging</label>
-            <div class="toggle-group" id="lokasiChargingGroup">
-              <div class="toggle-option" data-value="Dalam Perusahaan">Dalam Perusahaan</div>
-              <div class="toggle-option" data-value="Luar Perusahaan">Luar Perusahaan</div>
+        <div class="sub-section" id="biayaSection" style="display:none;">
+          <div class="sub-section-title">Pembayaran SPKLU</div>
+          <div class="hint" style="margin-bottom:14px;">Isi sesuai bukti pembayaran yang diterima di SPKLU.</div>
+          <div class="field row2">
+            <div>
+              <label for="tarifInput">Biaya per kWh (Rp)</label>
+              <input type="number" id="tarifInput" inputmode="numeric" min="0" step="1" placeholder="0">
+            </div>
+            <div>
+              <label for="adminInput">Biaya Admin (Rp)</label>
+              <input type="number" id="adminInput" inputmode="numeric" min="0" step="1" placeholder="0">
             </div>
           </div>
-          <div class="field" id="lokasiSpkluField" style="display:none;margin-bottom:0;">
-            <label for="lokasiSpklu">Lokasi SPKLU</label>
-            <input type="text" id="lokasiSpklu" placeholder="Contoh: SPKLU PLN Rest Area KM 57">
+          <div class="field">
+            <label for="totalInput">Total Dibayar (Rp)</label>
+            <input type="number" id="totalInput" inputmode="numeric" min="0" step="1" placeholder="Sesuai total di struk">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Foto Struk <span class="hint" id="fotoCount">(0/5)</span></label>
+            <div class="foto-actions">
+              <button type="button" class="foto-btn" id="btnAmbilFoto">📷 Ambil Foto</button>
+              <button type="button" class="foto-btn" id="btnUploadFoto">🖼️ Upload dari Galeri</button>
+            </div>
+            <input type="file" id="inputKamera" accept="image/*" capture="environment" hidden>
+            <input type="file" id="inputGaleri" accept="image/*" multiple hidden>
+            <div class="foto-grid" id="fotoGrid"></div>
+            <div class="foto-pesan" id="fotoPesan">Maksimal 5 foto struk untuk dokumen tim kasir.</div>
+          </div>
+        </div>
+
+        <div class="sub-section" id="bateraiAwalSection" style="display:none;">
+          <div class="sub-section-title">Kondisi Baterai Awal</div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="bateraiAwal">Baterai Awal (%)</label>
+            <input type="number" id="bateraiAwal" inputmode="numeric" min="0" max="100" step="1" placeholder="Contoh: 25">
           </div>
         </div>
 
@@ -677,6 +714,14 @@
           <span class="info-label">KM Awal</span>
           <span class="info-value" id="infoKmAwal">—</span>
         </div>
+        <div class="info-row" id="infoBateraiRow" style="display:none;">
+          <span class="info-label">Baterai Awal</span>
+          <span class="info-value" id="infoBateraiAwal">—</span>
+        </div>
+        <div class="info-row" id="infoBiayaRow" style="display:none;">
+          <span class="info-label">Pembayaran SPKLU</span>
+          <span class="info-value" id="infoBiaya">—</span>
+        </div>
         <div class="info-row">
           <span class="info-label">Waktu Mulai</span>
           <span class="info-value" id="infoWaktuAwal">—</span>
@@ -708,6 +753,24 @@
           </div>
         </div>
         <div class="selisih-preview" id="selisihPreview"></div>
+
+        <div class="sub-section" id="bateraiAkhirSection" style="display:none;margin-top:14px;">
+          <div class="sub-section-title">Kondisi Baterai</div>
+          <div class="field" id="bateraiAwalFallbackField" style="display:none;">
+            <label for="bateraiAwalFallback">Baterai Awal (%)</label>
+            <input type="number" id="bateraiAwalFallback" inputmode="numeric" min="0" max="100" step="1" placeholder="Belum tercatat, isi di sini">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="bateraiAkhir">Baterai Akhir (%)</label>
+            <input type="number" id="bateraiAkhir" inputmode="numeric" min="0" max="100" step="1" placeholder="Contoh: 80">
+          </div>
+          <div class="bat-preview" id="bateraiPreview"></div>
+          <div class="field" id="kwhField" style="display:none;margin-top:14px;margin-bottom:0;">
+            <label for="kwhInput">Jumlah kWh <span class="hint">(opsional, sesuai layar charger atau struk akhir)</span></label>
+            <input type="number" id="kwhInput" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+        </div>
+
       </div>
 
       <button type="submit" class="primary" id="submitAkhirBtn">Selesaikan Perjalanan</button>
@@ -812,6 +875,7 @@
   function showMsg(text, type) {
     msgBox.textContent = text;
     msgBox.className = 'msg ' + type;
+    if (type === 'error') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function hideMsg() {
     msgBox.className = 'msg';
@@ -849,6 +913,8 @@
   const lokasiChargingGroup = document.getElementById('lokasiChargingGroup');
   const spkluField = document.getElementById('spkluField');
   const lokasiSpkluInput = document.getElementById('lokasiSpklu');
+  const bateraiAwalSection = document.getElementById('bateraiAwalSection');
+  const bateraiAwalInput = document.getElementById('bateraiAwal');
 
   document.querySelectorAll('#pageJenis .jenis-option').forEach(function (opt) {
     opt.addEventListener('click', function () {
@@ -858,6 +924,11 @@
       const isPerjalanan = opt.id === 'optPerjalanan';
       detailTugasSection.style.display = isPerjalanan ? 'block' : 'none';
       detailChargingSection.style.display = isPerjalanan ? 'none' : 'block';
+      bateraiAwalSection.style.display = isPerjalanan ? 'none' : 'block';
+      bateraiAwalInput.required = !isPerjalanan;
+      if (isPerjalanan) bateraiAwalInput.value = '';
+      biayaSection.style.display = 'none';
+      resetBiaya();
       hideMsg();
       goToPage('pageKendaraan');
     });
@@ -883,6 +954,10 @@
       const isLuar = state.lokasiCharging === 'Luar Perusahaan';
       spkluField.style.display = isLuar ? 'block' : 'none';
       if (!isLuar) lokasiSpkluInput.value = '';
+      biayaSection.style.display = isLuar ? 'block' : 'none';
+      tarifInput.required = isLuar;
+      totalInput.required = isLuar;
+      if (!isLuar) resetBiaya();
     });
   });
 
@@ -1091,6 +1166,31 @@
       return;
     }
 
+    let bAwal = null;
+    if (isCharging) {
+      bAwal = parseInt(bateraiAwalInput.value, 10);
+      if (isNaN(bAwal) || bAwal < 0 || bAwal > 100) {
+        showMsg('Baterai Awal harus berupa angka 0 sampai 100 (%).', 'error');
+        return;
+      }
+    }
+
+    const isSpklu = isCharging && state.lokasiCharging === 'Luar Perusahaan';
+    let biayaPayload = null;
+    if (isSpklu) {
+      const tarif = parseFloat(tarifInput.value);
+      const admin = adminInput.value === '' ? 0 : parseFloat(adminInput.value);
+      const total = parseFloat(totalInput.value);
+      if (isNaN(tarif) || tarif <= 0) { showMsg('Biaya per kWh harus lebih dari 0.', 'error'); return; }
+      if (isNaN(admin) || admin < 0) { showMsg('Biaya Admin tidak boleh negatif.', 'error'); return; }
+      if (isNaN(total) || total <= 0) { showMsg('Total Dibayar harus lebih dari 0.', 'error'); return; }
+      if (STRUK_WAJIB && fotoStruk.length === 0) {
+        showMsg('Mohon lampirkan minimal 1 foto struk pembayaran.', 'error');
+        return;
+      }
+      biayaPayload = { biayaPerKwh: tarif, biayaAdmin: admin, totalBiaya: total, fotoStruk: fotoStruk.slice() };
+    }
+
     // Gabungkan jenis pencatatan dengan detail tambahan (wilayah tugas / lokasi charging)
     let keteranganFinal = state.keterangan;
     if (isPerjalanan) {
@@ -1116,9 +1216,11 @@
       keterangan: keteranganFinal,
       kmAwal: kmAwal
     };
+    if (isCharging) payload.bateraiAwal = bAwal;
+    if (biayaPayload) Object.assign(payload, biayaPayload);
 
     submitAwalBtn.disabled = true;
-    submitAwalBtn.textContent = 'Menyimpan…';
+    submitAwalBtn.textContent = (biayaPayload && biayaPayload.fotoStruk.length > 0) ? 'Mengunggah foto, mohon tunggu…' : 'Menyimpan…';
 
     try {
       const res = await fetch(API_URL, {
@@ -1131,7 +1233,10 @@
       if (data.status === 'success') {
         document.getElementById('successTitle').textContent = 'Perjalanan Dimulai';
         document.getElementById('successDetail').textContent =
-          'KM Awal ' + state.nomorKendaraan + ' berhasil dicatat. Kembali ke aplikasi ini nanti untuk mengisi KM Akhir.';
+          'KM Awal ' + state.nomorKendaraan + ' berhasil dicatat' +
+          (isCharging ? ' (baterai awal ' + bAwal + '%)' : '') +
+          (biayaPayload && biayaPayload.fotoStruk.length > 0 ? '. Bukti pembayaran (' + biayaPayload.fotoStruk.length + ' foto) tersimpan' : '') +
+          '. Kembali ke aplikasi ini nanti untuk mengisi KM Akhir.';
         goToPage('pageSukses');
       } else {
         showMsg(data.message || 'Terjadi kesalahan saat menyimpan data.', 'error');
@@ -1145,10 +1250,72 @@
   });
 
   // ---- [SELESAI] HALAMAN Isi KM Akhir ----
+  const MAX_FOTO = 5;
+  const STRUK_WAJIB = true; // ubah ke false jika foto struk tidak wajib untuk charging di SPKLU
+
   const formAkhir = document.getElementById('formAkhir');
   const submitAkhirBtn = document.getElementById('submitAkhirBtn');
   const kmAkhirInput = document.getElementById('kmAkhir');
   const selisihPreview = document.getElementById('selisihPreview');
+
+  const bateraiAkhirSection = document.getElementById('bateraiAkhirSection');
+  const bateraiAwalFallbackField = document.getElementById('bateraiAwalFallbackField');
+  const bateraiAwalFallbackInput = document.getElementById('bateraiAwalFallback');
+  const bateraiAkhirInput = document.getElementById('bateraiAkhir');
+  const bateraiPreview = document.getElementById('bateraiPreview');
+  const infoBateraiRow = document.getElementById('infoBateraiRow');
+  const infoBateraiAwal = document.getElementById('infoBateraiAwal');
+
+  const biayaSection = document.getElementById('biayaSection');
+  const kwhInput = document.getElementById('kwhInput');
+  const kwhField = document.getElementById('kwhField');
+  const infoBiayaRow = document.getElementById('infoBiayaRow');
+  const infoBiaya = document.getElementById('infoBiaya');
+  const tarifInput = document.getElementById('tarifInput');
+  const adminInput = document.getElementById('adminInput');
+  const totalInput = document.getElementById('totalInput');
+
+  const fotoGrid = document.getElementById('fotoGrid');
+  const fotoCount = document.getElementById('fotoCount');
+  const fotoPesan = document.getElementById('fotoPesan');
+  const btnAmbilFoto = document.getElementById('btnAmbilFoto');
+  const btnUploadFoto = document.getElementById('btnUploadFoto');
+  const inputKamera = document.getElementById('inputKamera');
+  const inputGaleri = document.getElementById('inputGaleri');
+
+  let fotoStruk = [];       // array dataURL JPEG (sudah dikompres)
+
+  function isChargingTrip(t) {
+    return !!t && String(t.keterangan).indexOf('Kilometer Pengisian Charging') === 0;
+  }
+  function isSpkluTrip(t) {
+    return isChargingTrip(t) && String(t.keterangan).indexOf('Luar Perusahaan') !== -1;
+  }
+  function bateraiAwalTrip(t) {
+    if (t && t.bateraiAwal !== null && t.bateraiAwal !== undefined && t.bateraiAwal !== '' && !isNaN(t.bateraiAwal)) {
+      return Number(t.bateraiAwal);
+    }
+    return null;
+  }
+  function nilaiBateraiAwal() {
+    const dariTrip = bateraiAwalTrip(state.selectedTrip);
+    if (dariTrip !== null) return dariTrip;
+    const v = parseInt(bateraiAwalFallbackInput.value, 10);
+    return isNaN(v) ? null : v;
+  }
+  function formatMenit(m) {
+    if (m >= 60) return Math.floor(m / 60) + ' jam ' + (m % 60) + ' menit';
+    return m + ' menit';
+  }
+  function hitungDurasiMenit() {
+    const t = state.selectedTrip;
+    if (!t) return null;
+    const a = new Date(t.tanggalAwal + 'T' + t.jamAwal + ':00');
+    const b = new Date(document.getElementById('tanggalAkhir').value + 'T' +
+      getTimeSelectValue(jamAkhirSel.hhEl, jamAkhirSel.mmEl) + ':00');
+    const m = Math.round((b - a) / 60000);
+    return isNaN(m) ? null : m;
+  }
 
   function fillInfoAkhir() {
     const t = state.selectedTrip;
@@ -1164,6 +1331,43 @@
     setTimeSelectValue(jamAkhirSel.hhEl, jamAkhirSel.mmEl, now);
     kmAkhirInput.value = '';
     selisihPreview.innerHTML = '';
+
+    // Bagian khusus charging / SPKLU
+    const charging = isChargingTrip(t);
+    const spklu = isSpkluTrip(t);
+    const batKnown = bateraiAwalTrip(t) !== null;
+
+    bateraiAkhirSection.style.display = charging ? 'block' : 'none';
+    bateraiAkhirInput.required = charging;
+    bateraiAkhirInput.value = '';
+    bateraiAwalFallbackInput.value = '';
+    bateraiAwalFallbackField.style.display = (charging && !batKnown) ? 'block' : 'none';
+    bateraiAwalFallbackInput.required = charging && !batKnown;
+    infoBateraiRow.style.display = (charging && batKnown) ? '' : 'none';
+    if (charging && batKnown) infoBateraiAwal.textContent = bateraiAwalTrip(t) + '%';
+    bateraiPreview.innerHTML = '';
+
+    // SPKLU: biaya & foto struk sudah diisi saat Mulai; di sini hanya kWh (opsional)
+    kwhField.style.display = spklu ? 'block' : 'none';
+    kwhInput.value = '';
+    const adaBiaya = spklu && t.totalBiaya !== null && t.totalBiaya !== undefined && !isNaN(t.totalBiaya) && Number(t.totalBiaya) > 0;
+    infoBiayaRow.style.display = adaBiaya ? '' : 'none';
+    if (adaBiaya) {
+      infoBiaya.textContent = 'Rp ' + Number(t.totalBiaya).toLocaleString('id-ID') +
+        (t.jumlahFoto ? ' · ' + t.jumlahFoto + ' foto struk' : '');
+    }
+  }
+
+  // Dipakai di halaman Mulai (pembayaran SPKLU)
+  function resetBiaya() {
+    tarifInput.value = '';
+    adminInput.value = '';
+    totalInput.value = '';
+    tarifInput.required = false;
+    totalInput.required = false;
+    fotoStruk = [];
+    renderFoto();
+    setFotoPesan('Maksimal ' + MAX_FOTO + ' foto struk untuk dokumen tim kasir.', false);
   }
 
   function updateSelisih() {
@@ -1183,6 +1387,122 @@
   }
   kmAkhirInput.addEventListener('input', updateSelisih);
 
+  // ---- Preview baterai masuk + durasi ----
+  function updateBateraiPreview() {
+    const t = state.selectedTrip;
+    if (!isChargingTrip(t)) { bateraiPreview.innerHTML = ''; return; }
+    const awal = nilaiBateraiAwal();
+    const akhir = parseInt(bateraiAkhirInput.value, 10);
+    if (awal === null || isNaN(akhir)) { bateraiPreview.innerHTML = ''; return; }
+    const masuk = akhir - awal;
+    if (masuk < 0) {
+      bateraiPreview.innerHTML = '<span style="color:#C0392B;">Baterai Akhir tidak boleh lebih kecil dari Baterai Awal</span>';
+      return;
+    }
+    let teks = 'Baterai naik <strong>' + masuk + '%</strong> (' + awal + '% → ' + akhir + '%)';
+    const dur = hitungDurasiMenit();
+    if (dur !== null && dur > 0) teks += ' · durasi <strong>' + formatMenit(dur) + '</strong>';
+    bateraiPreview.innerHTML = teks;
+  }
+  bateraiAkhirInput.addEventListener('input', updateBateraiPreview);
+  bateraiAwalFallbackInput.addEventListener('input', updateBateraiPreview);
+  document.getElementById('tanggalAkhir').addEventListener('change', updateBateraiPreview);
+  jamAkhirSel.hhEl.addEventListener('change', updateBateraiPreview);
+  jamAkhirSel.mmEl.addEventListener('change', updateBateraiPreview);
+
+  // ---- Foto struk: ambil foto / upload, kompres di HP ----
+  function setFotoPesan(teks, isError) {
+    fotoPesan.textContent = teks;
+    fotoPesan.className = 'foto-pesan' + (isError ? ' error' : '');
+  }
+
+  function renderFoto() {
+    fotoGrid.innerHTML = '';
+    fotoStruk.forEach(function (dataUrl, idx) {
+      const item = document.createElement('div');
+      item.className = 'foto-item';
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = 'Foto struk ' + (idx + 1);
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'del';
+      del.textContent = '×';
+      del.setAttribute('aria-label', 'Hapus foto ' + (idx + 1));
+      del.addEventListener('click', function () {
+        fotoStruk.splice(idx, 1);
+        renderFoto();
+        setFotoPesan('Maksimal ' + MAX_FOTO + ' foto struk untuk dokumen tim kasir.', false);
+      });
+      item.appendChild(img);
+      item.appendChild(del);
+      fotoGrid.appendChild(item);
+    });
+    fotoCount.textContent = '(' + fotoStruk.length + '/' + MAX_FOTO + ')';
+    const penuh = fotoStruk.length >= MAX_FOTO;
+    btnAmbilFoto.disabled = penuh;
+    btnUploadFoto.disabled = penuh;
+  }
+
+  function bacaDanKompres(file) {
+    return new Promise(function (resolve, reject) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = function () {
+        const maxSide = 1600;
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        const scale = Math.min(1, maxSide / Math.max(w, h));
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('Foto tidak bisa dibaca'));
+      };
+      img.src = url;
+    });
+  }
+
+  async function tambahFoto(fileList) {
+    const files = Array.prototype.slice.call(fileList || []);
+    if (files.length === 0) return;
+    hideMsg();
+    let ditolak = 0;
+    let gagal = 0;
+    for (let i = 0; i < files.length; i++) {
+      if (fotoStruk.length >= MAX_FOTO) { ditolak++; continue; }
+      try {
+        fotoStruk.push(await bacaDanKompres(files[i]));
+      } catch (err) {
+        gagal++;
+      }
+    }
+    renderFoto();
+    if (ditolak > 0) {
+      setFotoPesan('Maksimal ' + MAX_FOTO + ' foto. ' + ditolak + ' foto tidak ditambahkan.', true);
+    } else if (gagal > 0) {
+      setFotoPesan(gagal + ' foto gagal dibaca. Coba ambil ulang.', true);
+    } else {
+      setFotoPesan('Maksimal ' + MAX_FOTO + ' foto struk untuk dokumen tim kasir.', false);
+    }
+  }
+
+  btnAmbilFoto.addEventListener('click', function () { inputKamera.click(); });
+  btnUploadFoto.addEventListener('click', function () { inputGaleri.click(); });
+  inputKamera.addEventListener('change', function (e) { tambahFoto(e.target.files); e.target.value = ''; });
+  inputGaleri.addEventListener('change', function (e) { tambahFoto(e.target.files); e.target.value = ''; });
+
+  // ---- Submit SELESAI ----
   formAkhir.addEventListener('submit', async function (e) {
     e.preventDefault();
     hideMsg();
@@ -1199,13 +1519,49 @@
       return;
     }
 
+    const charging = isChargingTrip(t);
+    const spklu = isSpkluTrip(t);
+
     const payload = {
       action: 'selesai',
       idTrip: t.idTrip,
+      nomorKendaraan: t.nomorKendaraan,
       tanggalAkhir: document.getElementById('tanggalAkhir').value,
       jamAkhir: getTimeSelectValue(jamAkhirSel.hhEl, jamAkhirSel.mmEl),
       kmAkhir: kmAkhir
     };
+
+    let bAwal = null;
+    let bAkhir = null;
+    if (charging) {
+      bAwal = nilaiBateraiAwal();
+      bAkhir = parseInt(bateraiAkhirInput.value, 10);
+      if (bAwal === null || isNaN(bAwal) || bAwal < 0 || bAwal > 100) {
+        showMsg('Baterai Awal harus berupa angka 0 sampai 100 (%).', 'error');
+        return;
+      }
+      if (isNaN(bAkhir) || bAkhir < 0 || bAkhir > 100) {
+        showMsg('Baterai Akhir harus berupa angka 0 sampai 100 (%).', 'error');
+        return;
+      }
+      if (bAkhir < bAwal) {
+        showMsg('Baterai Akhir tidak boleh lebih kecil dari Baterai Awal.', 'error');
+        return;
+      }
+      if (bateraiAwalTrip(t) === null) payload.bateraiAwal = bAwal;
+      payload.bateraiAkhir = bAkhir;
+    }
+
+    if (spklu && kwhInput.value !== '') {
+      const kwh = parseFloat(kwhInput.value);
+      if (isNaN(kwh) || kwh <= 0) {
+        showMsg('Jumlah kWh harus lebih dari 0 (atau kosongkan).', 'error');
+        return;
+      }
+      payload.kwh = kwh;
+    }
+
+    const durasi = hitungDurasiMenit();
 
     submitAkhirBtn.disabled = true;
     submitAkhirBtn.textContent = 'Menyimpan…';
@@ -1219,9 +1575,14 @@
       const data = await res.json();
 
       if (data.status === 'success') {
+        let detail = 'KM Akhir ' + t.nomorKendaraan + ' berhasil dicatat.';
+        if (charging) {
+          detail += ' Baterai naik ' + (bAkhir - bAwal) + '% (' + bAwal + '% → ' + bAkhir + '%)';
+          detail += (durasi !== null && durasi > 0) ? ' dalam ' + formatMenit(durasi) + '.' : '.';
+        }
+        detail += ' Terima kasih!';
         document.getElementById('successTitle').textContent = 'Perjalanan Selesai';
-        document.getElementById('successDetail').textContent =
-          'KM Akhir ' + t.nomorKendaraan + ' berhasil dicatat. Terima kasih!';
+        document.getElementById('successDetail').textContent = detail;
         goToPage('pageSukses');
       } else {
         showMsg(data.message || 'Terjadi kesalahan saat menyimpan data.', 'error');
@@ -1240,6 +1601,13 @@
     formAkhir.reset();
     setDefaultDateTimeAwal();
     selisihPreview.innerHTML = '';
+    bateraiPreview.innerHTML = '';
+    bateraiAwalSection.style.display = 'none';
+    bateraiAwalInput.required = false;
+    bateraiAkhirSection.style.display = 'none';
+    biayaSection.style.display = 'none';
+    resetBiaya();
+    kwhField.style.display = 'none';
     manualDriverFields.style.display = 'none';
     namaDriverManualInput.required = false;
     wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (o) {
