@@ -622,7 +622,7 @@
           <div class="hint" style="margin-bottom:14px;">Isi sesuai bukti pembayaran yang diterima di SPKLU.</div>
           <div class="field row2">
             <div>
-              <label for="tarifInput">Biaya per kWh (Rp)</label>
+              <label for="tarifInput">Biaya Pembelian (Rp)</label>
               <input type="number" id="tarifInput" inputmode="numeric" min="0" step="1" placeholder="0">
             </div>
             <div>
@@ -1181,7 +1181,7 @@
       const tarif = parseFloat(tarifInput.value);
       const admin = adminInput.value === '' ? 0 : parseFloat(adminInput.value);
       const total = parseFloat(totalInput.value);
-      if (isNaN(tarif) || tarif <= 0) { showMsg('Biaya per kWh harus lebih dari 0.', 'error'); return; }
+      if (isNaN(tarif) || tarif <= 0) { showMsg('Biaya Pembelian harus lebih dari 0.', 'error'); return; }
       if (isNaN(admin) || admin < 0) { showMsg('Biaya Admin tidak boleh negatif.', 'error'); return; }
       if (isNaN(total) || total <= 0) { showMsg('Total Dibayar harus lebih dari 0.', 'error'); return; }
       if (STRUK_WAJIB && fotoStruk.length === 0) {
