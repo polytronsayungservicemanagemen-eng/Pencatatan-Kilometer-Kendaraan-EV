@@ -477,6 +477,11 @@
   .foto-pesan.error{color:#B3141C;font-weight:600;}
   .bat-preview{font-size:13px;color:var(--muted);margin-top:8px;min-height:18px;}
   .bat-preview strong{color:var(--ink);}
+  /* ---- QR: kendaraan terpilih dari parameter link ---- */
+  .preset-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--green-bg);border:1px solid #F5C6C8;border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green-dark);margin-bottom:6px;}
+  .preset-banner a{color:var(--green-dark);font-weight:700;text-decoration:underline;white-space:nowrap;cursor:pointer;}
+  .list-link{text-align:center;font-size:13px;padding:8px 0;}
+  .list-link a{color:var(--green-dark);font-weight:700;text-decoration:underline;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -504,6 +509,10 @@
   <section class="page active" id="pageAksi">
     <p class="page-title">Pilih Aktivitas Pencatatan</p>
     <p class="page-sub">Silakan pilih apakah Anda akan memulai perjalanan baru atau menyelesaikan perjalanan yang sedang berlangsung.</p>
+    <div class="preset-banner" id="presetBanner" style="display:none;">
+      <span>Kendaraan: <b id="presetNopolText"></b> (dari QR)</span>
+      <a id="presetClear">Bukan kendaraan ini?</a>
+    </div>
     <div class="jenis-group">
       <div class="jenis-option" id="optMulai" data-value="mulai">
         <div class="icon">🚗</div>
@@ -617,36 +626,6 @@
           </div>
         </div>
 
-        <div class="sub-section" id="biayaSection" style="display:none;">
-          <div class="sub-section-title">Pembayaran SPKLU</div>
-          <div class="hint" style="margin-bottom:14px;">Isi sesuai bukti pembayaran yang diterima di SPKLU.</div>
-          <div class="field row2">
-            <div>
-              <label for="tarifInput">Biaya Pembelian (Rp)</label>
-              <input type="number" id="tarifInput" inputmode="numeric" min="0" step="1" placeholder="0">
-            </div>
-            <div>
-              <label for="adminInput">Biaya Admin (Rp)</label>
-              <input type="number" id="adminInput" inputmode="numeric" min="0" step="1" placeholder="0">
-            </div>
-          </div>
-          <div class="field">
-            <label for="totalInput">Total Dibayar (Rp)</label>
-            <input type="number" id="totalInput" inputmode="numeric" min="0" step="1" placeholder="Sesuai total di struk">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Foto Struk <span class="hint" id="fotoCount">(0/5)</span></label>
-            <div class="foto-actions">
-              <button type="button" class="foto-btn" id="btnAmbilFoto">📷 Ambil Foto</button>
-              <button type="button" class="foto-btn" id="btnUploadFoto">🖼️ Upload dari Galeri</button>
-            </div>
-            <input type="file" id="inputKamera" accept="image/*" capture="environment" hidden>
-            <input type="file" id="inputGaleri" accept="image/*" multiple hidden>
-            <div class="foto-grid" id="fotoGrid"></div>
-            <div class="foto-pesan" id="fotoPesan">Maksimal 5 foto struk untuk dokumen tim kasir.</div>
-          </div>
-        </div>
-
         <div class="sub-section" id="bateraiAwalSection" style="display:none;">
           <div class="sub-section-title">Kondisi Baterai Awal</div>
           <div class="field" style="margin-bottom:0;">
@@ -718,10 +697,6 @@
           <span class="info-label">Baterai Awal</span>
           <span class="info-value" id="infoBateraiAwal">—</span>
         </div>
-        <div class="info-row" id="infoBiayaRow" style="display:none;">
-          <span class="info-label">Pembayaran SPKLU</span>
-          <span class="info-value" id="infoBiaya">—</span>
-        </div>
         <div class="info-row">
           <span class="info-label">Waktu Mulai</span>
           <span class="info-value" id="infoWaktuAwal">—</span>
@@ -765,9 +740,40 @@
             <input type="number" id="bateraiAkhir" inputmode="numeric" min="0" max="100" step="1" placeholder="Contoh: 80">
           </div>
           <div class="bat-preview" id="bateraiPreview"></div>
-          <div class="field" id="kwhField" style="display:none;margin-top:14px;margin-bottom:0;">
-            <label for="kwhInput">Jumlah kWh <span class="hint">(opsional, sesuai layar charger atau struk akhir)</span></label>
+        </div>
+
+        <div class="sub-section" id="biayaSection" style="display:none;margin-top:14px;margin-bottom:0;">
+          <div class="sub-section-title">Biaya Charging SPKLU</div>
+          <div class="hint" style="margin-bottom:14px;">Isi sesuai struk pembayaran dari SPKLU.</div>
+          <div class="field row2">
+            <div>
+              <label for="pembelianInput">Biaya Pembelian (Rp)</label>
+              <input type="number" id="pembelianInput" inputmode="numeric" min="0" step="1" placeholder="0">
+            </div>
+            <div>
+              <label for="adminInput">Biaya Admin (Rp)</label>
+              <input type="number" id="adminInput" inputmode="numeric" min="0" step="1" placeholder="0">
+            </div>
+          </div>
+          <div class="field">
+            <label for="totalInput">Total Dibayar (Rp)</label>
+            <input type="number" id="totalInput" inputmode="numeric" min="0" step="1" placeholder="Otomatis: pembelian + admin">
+            <div class="hint" style="margin-top:6px;">Total terhitung otomatis. Ubah bila berbeda dengan total di struk.</div>
+          </div>
+          <div class="field">
+            <label for="kwhInput">Jumlah kWh <span class="hint">(opsional)</span></label>
             <input type="number" id="kwhInput" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Foto Struk <span class="hint" id="fotoCount">(0/5)</span></label>
+            <div class="foto-actions">
+              <button type="button" class="foto-btn" id="btnAmbilFoto">📷 Ambil Foto</button>
+              <button type="button" class="foto-btn" id="btnUploadFoto">🖼️ Upload dari Galeri</button>
+            </div>
+            <input type="file" id="inputKamera" accept="image/*" capture="environment" hidden>
+            <input type="file" id="inputGaleri" accept="image/*" multiple hidden>
+            <div class="foto-grid" id="fotoGrid"></div>
+            <div class="foto-pesan" id="fotoPesan">Maksimal 5 foto struk untuk dokumen tim kasir.</div>
           </div>
         </div>
 
@@ -901,6 +907,7 @@
   document.getElementById('optSelesai').addEventListener('click', function () {
     state.flow = 'selesai';
     hideMsg();
+    tampilSemuaTrip = false;
     renderTripAktifList();
     goToPage('pageAktif');
   });
@@ -927,10 +934,15 @@
       bateraiAwalSection.style.display = isPerjalanan ? 'none' : 'block';
       bateraiAwalInput.required = !isPerjalanan;
       if (isPerjalanan) bateraiAwalInput.value = '';
-      biayaSection.style.display = 'none';
-      resetBiaya();
       hideMsg();
-      goToPage('pageKendaraan');
+      if (presetNopol) {
+        // Datang dari QR kendaraan: lewati halaman pilih kendaraan
+        state.nomorKendaraan = presetNopol;
+        updateSummaryAwal();
+        goToPage('pageAwal');
+      } else {
+        goToPage('pageKendaraan');
+      }
     });
   });
 
@@ -954,10 +966,6 @@
       const isLuar = state.lokasiCharging === 'Luar Perusahaan';
       spkluField.style.display = isLuar ? 'block' : 'none';
       if (!isLuar) lokasiSpkluInput.value = '';
-      biayaSection.style.display = isLuar ? 'block' : 'none';
-      tarifInput.required = isLuar;
-      totalInput.required = isLuar;
-      if (!isLuar) resetBiaya();
     });
   });
 
@@ -966,6 +974,29 @@
   const namaDriverSelect = document.getElementById('namaDriver');
   const tripAktifListEl = document.getElementById('tripAktifList');
   let daftarDriver = []; // {nama, nik}
+  // ---- Kendaraan terpilih otomatis dari QR (?nopol=K%201065%20VT) ----
+  const normNopol = function (x) { return String(x || '').replace(/\s+/g, ' ').trim().toUpperCase(); };
+  const presetRaw = new URLSearchParams(window.location.search).get('nopol');
+  const presetBanner = document.getElementById('presetBanner');
+  let presetNopol = '';
+  let presetDibatalkan = false;
+  let tampilSemuaTrip = false;
+
+  function terapkanPreset(daftarKendaraan) {
+    if (presetDibatalkan || !presetRaw) return;
+    const cocok = daftarKendaraan.filter(function (n) { return normNopol(n) === normNopol(presetRaw); })[0];
+    if (!cocok) return; // nopol di link tidak ada di daftar: abaikan
+    presetNopol = cocok;
+    document.getElementById('presetNopolText').textContent = cocok;
+    presetBanner.style.display = 'flex';
+  }
+  document.getElementById('presetClear').addEventListener('click', function () {
+    presetDibatalkan = true;
+    presetNopol = '';
+    tampilSemuaTrip = false;
+    presetBanner.style.display = 'none';
+  });
+
   let daftarTripAktif = []; // {idTrip, nomorKendaraan, namaDriver, nik, tanggalAwal, jamAwal, kmAwal, keterangan}
 
   async function loadMasterData() {
@@ -1023,6 +1054,8 @@
       manualOpt.textContent = '✏️ Lainnya (isi manual)';
       namaDriverSelect.appendChild(manualOpt);
 
+      terapkanPreset((data.status === 'success' && data.kendaraan) ? data.kendaraan : []);
+
       // --- Trip Aktif (perjalanan yang sedang berjalan) ---
       daftarTripAktif = (data.status === 'success' && data.tripAktif) ? data.tripAktif : [];
       if (state.flow === 'selesai') renderTripAktifList();
@@ -1042,7 +1075,29 @@
       tripAktifListEl.innerHTML = '<div class="list-status">Belum ada perjalanan yang sedang berjalan.</div>';
       return;
     }
-    daftarTripAktif.forEach(function (trip) {
+    const filterAktif = !!presetNopol && !tampilSemuaTrip;
+    const daftarTampil = filterAktif
+      ? daftarTripAktif.filter(function (t) { return normNopol(t.nomorKendaraan) === normNopol(presetNopol); })
+      : daftarTripAktif;
+
+    function linkSemua(teks) {
+      const el = document.createElement('div');
+      el.className = 'list-link';
+      el.innerHTML = '<a>' + teks + '</a>';
+      el.querySelector('a').addEventListener('click', function () {
+        tampilSemuaTrip = true;
+        renderTripAktifList();
+      });
+      return el;
+    }
+
+    if (filterAktif && daftarTampil.length === 0) {
+      tripAktifListEl.innerHTML = '<div class="list-status">Tidak ada perjalanan aktif untuk ' + presetNopol + '.</div>';
+      tripAktifListEl.appendChild(linkSemua('Tampilkan semua perjalanan aktif'));
+      return;
+    }
+
+    daftarTampil.forEach(function (trip) {
       const item = document.createElement('div');
       item.className = 'trip-item';
       item.innerHTML =
@@ -1059,6 +1114,7 @@
       });
       tripAktifListEl.appendChild(item);
     });
+    if (filterAktif) tripAktifListEl.appendChild(linkSemua('Tampilkan semua perjalanan aktif'));
   }
 
   // ---- [MULAI] HALAMAN Isi KM Awal ----
@@ -1175,22 +1231,6 @@
       }
     }
 
-    const isSpklu = isCharging && state.lokasiCharging === 'Luar Perusahaan';
-    let biayaPayload = null;
-    if (isSpklu) {
-      const tarif = parseFloat(tarifInput.value);
-      const admin = adminInput.value === '' ? 0 : parseFloat(adminInput.value);
-      const total = parseFloat(totalInput.value);
-      if (isNaN(tarif) || tarif <= 0) { showMsg('Biaya Pembelian harus lebih dari 0.', 'error'); return; }
-      if (isNaN(admin) || admin < 0) { showMsg('Biaya Admin tidak boleh negatif.', 'error'); return; }
-      if (isNaN(total) || total <= 0) { showMsg('Total Dibayar harus lebih dari 0.', 'error'); return; }
-      if (STRUK_WAJIB && fotoStruk.length === 0) {
-        showMsg('Mohon lampirkan minimal 1 foto struk pembayaran.', 'error');
-        return;
-      }
-      biayaPayload = { biayaPerKwh: tarif, biayaAdmin: admin, totalBiaya: total, fotoStruk: fotoStruk.slice() };
-    }
-
     // Gabungkan jenis pencatatan dengan detail tambahan (wilayah tugas / lokasi charging)
     let keteranganFinal = state.keterangan;
     if (isPerjalanan) {
@@ -1217,10 +1257,9 @@
       kmAwal: kmAwal
     };
     if (isCharging) payload.bateraiAwal = bAwal;
-    if (biayaPayload) Object.assign(payload, biayaPayload);
 
     submitAwalBtn.disabled = true;
-    submitAwalBtn.textContent = (biayaPayload && biayaPayload.fotoStruk.length > 0) ? 'Mengunggah foto, mohon tunggu…' : 'Menyimpan…';
+    submitAwalBtn.textContent = 'Menyimpan…';
 
     try {
       const res = await fetch(API_URL, {
@@ -1235,7 +1274,6 @@
         document.getElementById('successDetail').textContent =
           'KM Awal ' + state.nomorKendaraan + ' berhasil dicatat' +
           (isCharging ? ' (baterai awal ' + bAwal + '%)' : '') +
-          (biayaPayload && biayaPayload.fotoStruk.length > 0 ? '. Bukti pembayaran (' + biayaPayload.fotoStruk.length + ' foto) tersimpan' : '') +
           '. Kembali ke aplikasi ini nanti untuk mengisi KM Akhir.';
         goToPage('pageSukses');
       } else {
@@ -1268,10 +1306,7 @@
 
   const biayaSection = document.getElementById('biayaSection');
   const kwhInput = document.getElementById('kwhInput');
-  const kwhField = document.getElementById('kwhField');
-  const infoBiayaRow = document.getElementById('infoBiayaRow');
-  const infoBiaya = document.getElementById('infoBiaya');
-  const tarifInput = document.getElementById('tarifInput');
+  const pembelianInput = document.getElementById('pembelianInput');
   const adminInput = document.getElementById('adminInput');
   const totalInput = document.getElementById('totalInput');
 
@@ -1283,7 +1318,8 @@
   const inputKamera = document.getElementById('inputKamera');
   const inputGaleri = document.getElementById('inputGaleri');
 
-  let fotoStruk = [];       // array dataURL JPEG (sudah dikompres)
+  let fotoStruk = [];
+  let totalDiedit = false;  // true jika driver mengubah Total secara manual       // array dataURL JPEG (sudah dikompres)
 
   function isChargingTrip(t) {
     return !!t && String(t.keterangan).indexOf('Kilometer Pengisian Charging') === 0;
@@ -1347,28 +1383,41 @@
     if (charging && batKnown) infoBateraiAwal.textContent = bateraiAwalTrip(t) + '%';
     bateraiPreview.innerHTML = '';
 
-    // SPKLU: biaya & foto struk sudah diisi saat Mulai; di sini hanya kWh (opsional)
-    kwhField.style.display = spklu ? 'block' : 'none';
-    kwhInput.value = '';
-    const adaBiaya = spklu && t.totalBiaya !== null && t.totalBiaya !== undefined && !isNaN(t.totalBiaya) && Number(t.totalBiaya) > 0;
-    infoBiayaRow.style.display = adaBiaya ? '' : 'none';
-    if (adaBiaya) {
-      infoBiaya.textContent = 'Rp ' + Number(t.totalBiaya).toLocaleString('id-ID') +
-        (t.jumlahFoto ? ' · ' + t.jumlahFoto + ' foto struk' : '');
-    }
+    // SPKLU: biaya pembelian, admin, total, kWh (opsional) dan foto struk diisi di sini
+    biayaSection.style.display = spklu ? 'block' : 'none';
+    resetBiaya();
+    pembelianInput.required = spklu;
+    totalInput.required = spklu;
   }
 
-  // Dipakai di halaman Mulai (pembayaran SPKLU)
   function resetBiaya() {
-    tarifInput.value = '';
+    pembelianInput.value = '';
     adminInput.value = '';
     totalInput.value = '';
-    tarifInput.required = false;
+    kwhInput.value = '';
+    pembelianInput.required = false;
     totalInput.required = false;
+    totalDiedit = false;
     fotoStruk = [];
     renderFoto();
     setFotoPesan('Maksimal ' + MAX_FOTO + ' foto struk untuk dokumen tim kasir.', false);
   }
+
+  // Total otomatis = pembelian + admin (berhenti jika driver mengetik total sendiri)
+  function hitungTotal() {
+    if (totalDiedit) return;
+    const pembelian = parseFloat(pembelianInput.value) || 0;
+    const admin = parseFloat(adminInput.value) || 0;
+    const total = Math.round(pembelian + admin);
+    totalInput.value = total > 0 ? total : '';
+  }
+  [pembelianInput, adminInput].forEach(function (el) {
+    el.addEventListener('input', hitungTotal);
+  });
+  totalInput.addEventListener('input', function () {
+    totalDiedit = totalInput.value !== '';
+    if (!totalDiedit) hitungTotal();
+  });
 
   function updateSelisih() {
     const t = state.selectedTrip;
@@ -1552,19 +1601,33 @@
       payload.bateraiAkhir = bAkhir;
     }
 
-    if (spklu && kwhInput.value !== '') {
-      const kwh = parseFloat(kwhInput.value);
-      if (isNaN(kwh) || kwh <= 0) {
-        showMsg('Jumlah kWh harus lebih dari 0 (atau kosongkan).', 'error');
+    if (spklu) {
+      const pembelian = parseFloat(pembelianInput.value);
+      const admin = adminInput.value === '' ? 0 : parseFloat(adminInput.value);
+      const total = parseFloat(totalInput.value);
+      if (isNaN(pembelian) || pembelian <= 0) { showMsg('Biaya Pembelian harus lebih dari 0.', 'error'); return; }
+      if (isNaN(admin) || admin < 0) { showMsg('Biaya Admin tidak boleh negatif.', 'error'); return; }
+      if (isNaN(total) || total <= 0) { showMsg('Total Dibayar harus lebih dari 0.', 'error'); return; }
+      if (kwhInput.value !== '') {
+        const kwh = parseFloat(kwhInput.value);
+        if (isNaN(kwh) || kwh <= 0) { showMsg('Jumlah kWh harus lebih dari 0 (atau kosongkan).', 'error'); return; }
+        payload.kwh = kwh;
+      }
+      if (STRUK_WAJIB && fotoStruk.length === 0) {
+        showMsg('Mohon lampirkan minimal 1 foto struk.', 'error');
         return;
       }
-      payload.kwh = kwh;
+      payload.biayaPembelian = pembelian;
+      payload.biayaAdmin = admin;
+      payload.totalBiaya = total;
+      payload.fotoStruk = fotoStruk.slice();
     }
 
+    const adaFoto = spklu && fotoStruk.length > 0;
     const durasi = hitungDurasiMenit();
 
     submitAkhirBtn.disabled = true;
-    submitAkhirBtn.textContent = 'Menyimpan…';
+    submitAkhirBtn.textContent = adaFoto ? 'Mengunggah foto, mohon tunggu…' : 'Menyimpan…';
 
     try {
       const res = await fetch(API_URL, {
@@ -1580,6 +1643,7 @@
           detail += ' Baterai naik ' + (bAkhir - bAwal) + '% (' + bAwal + '% → ' + bAkhir + '%)';
           detail += (durasi !== null && durasi > 0) ? ' dalam ' + formatMenit(durasi) + '.' : '.';
         }
+        if (adaFoto) detail += ' Struk (' + fotoStruk.length + ' foto) tersimpan untuk tim kasir.';
         detail += ' Terima kasih!';
         document.getElementById('successTitle').textContent = 'Perjalanan Selesai';
         document.getElementById('successDetail').textContent = detail;
@@ -1607,7 +1671,6 @@
     bateraiAkhirSection.style.display = 'none';
     biayaSection.style.display = 'none';
     resetBiaya();
-    kwhField.style.display = 'none';
     manualDriverFields.style.display = 'none';
     namaDriverManualInput.required = false;
     wilayahTugasGroup.querySelectorAll('.toggle-option').forEach(function (o) {
